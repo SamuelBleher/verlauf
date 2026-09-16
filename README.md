@@ -107,6 +107,28 @@ js/ui/           Ansichten
 Nach Änderungen an App-Dateien `VERSION` in `sw.js` hochzählen, sonst hält der
 Service Worker die alte Fassung noch einen Start lang fest.
 
+### Prüfen
+
+```sh
+node tools/check.mjs           # Struktur, Layout, Kontrast, Überdeckung
+node tools/check.mjs --shots   # zusätzlich Screenshots nach screenshots/
+```
+
+Läuft jede Ansicht in hell und dunkel bei 320/390/430 px durch. Neben den
+üblichen Layoutprüfungen testet er mit `elementFromPoint`, ob etwas **über**
+dem Inhalt liegt — genau dieser Fehler war einmal unsichtbar für jede reine
+DOM-Prüfung und hat die App als schwarze Fläche ausgeliefert.
+
+Für Screenshots braucht es ein Chromium, das auch wirklich rastert; das
+System-Chrome auf diesem Rechner tut das nicht:
+
+```sh
+npx playwright@1.45.3 install chromium
+```
+
+`tools/seed.html` legt einen reproduzierbaren Demoverlauf an (und löscht dabei
+vorhandene lokale Daten — nie auf dem Gerät mit der echten Akte öffnen).
+
 ## Grenzen
 
 - Ein GitHub-Repo sollte unter ~1 GB bleiben. Bei komprimierten Fotos und

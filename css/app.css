@@ -175,7 +175,7 @@ a { color: var(--signal); }
 .tl-day small { display: block; font-size: 0.6875rem; font-weight: 400; color: var(--ink-dim); }
 
 /* dot + pain bar, anchored on the spine */
-.tl-bar { position: relative; height: 1.15rem; margin-left: 0.02rem; }
+.tl-bar { display: block; position: relative; height: 1.15rem; margin-left: 0.02rem; }
 .tl-dot {
   position: absolute; left: -4.5px; top: 0.2rem;
   width: 9px; height: 9px; border-radius: 50%;
@@ -193,8 +193,9 @@ a { color: var(--signal); }
   font-weight: 500;
 }
 
-.tl-body { grid-column: 2; padding-left: 1.25rem; padding-right: 0; }
+.tl-body { grid-column: 2; display: block; padding-left: 1.25rem; padding-right: 0; min-width: 0; }
 .tl-title {
+  display: block;
   font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.005em;
   margin: 0.1rem 0 0.15rem; line-height: 1.3;
 }

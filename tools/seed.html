@@ -1,0 +1,29 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>Demodaten</title>
+<body style="font:15px system-ui;padding:20px">
+<h1 style="font-size:17px">Demodaten</h1>
+<p id="out">…</p>
+<script type="module">
+// Nur für Tests: legt einen nachvollziehbaren Verlauf an und ersetzt dabei
+// vorhandene Demodaten, damit wiederholte Läufe nicht duplizieren.
+import * as db from '../js/db.js';
+import { emptyEntry, emptyCondition, CONDITION_COLORS } from '../js/models.js';
+await db.wipeAll();
+const c1 = emptyCondition({ name:'Knie links — Innenmeniskus', bodyPart:'Knie', side:'links', status:'reha', startDate:'2026-03-07', color:CONDITION_COLORS[0], notes:'Konservativ behandeln, Kontrolle in 6 Wochen.' });
+const c2 = emptyCondition({ name:'Unterer Rücken', bodyPart:'Unterer Rücken', status:'chronisch', startDate:'2024-11-02', color:CONDITION_COLORS[3] });
+await db.saveCondition(c1); await db.saveCondition(c2);
+const rows = [
+  ['2026-03-07','09:20','verletzung','Umgeknickt beim Fußball',9,c1,'Beim Zweikampf weggeknickt. Sofort dick geworden, konnte nicht mehr auftreten.','Sofort gekühlt und hochgelegt.','',''],
+  ['2026-03-09','15:00','arzt','Erstvorstellung Orthopädie',7,c1,'Verdacht auf Innenmeniskusriss, MRT angeordnet.','','Dr. Weber','Praxis Süd'],
+  ['2026-03-14','11:30','befund','MRT linkes Knie',6,c1,'Horizontalriss Innenmeniskus Hinterhorn. Kein Kreuzbandschaden.','','Radiologie Nord',''],
+  ['2026-03-20','17:45','physio','Physio — Einheit 1',5,c1,'Mobilisation, viel Quadrizeps.','Isometrie im Sitzen hat den Druck rausgenommen.','Frau Klein',''],
+  ['2026-04-02','18:00','physio','Physio — Einheit 4',3,c1,'Deutlich besser, erste Kniebeugen ohne Schmerz.','Exzentrik langsam, Wärme vorher.','Frau Klein',''],
+  ['2026-04-18','07:30','sport','Erster Lauf, 4 km',2,c1,'Vorsichtig gelaufen, kein Stechen.','','',''],
+  ['2026-04-24','20:10','tagebuch','Nach langem Sitzen steif',3,c1,'Büro-Tag, abends steif aber schmerzfrei.','Aufstehen alle 30 Minuten.','',''],
+  ['2026-05-11','08:00','arzt','Kontrolle',1,c1,'Alles stabil, freigegeben für Sport.','','Dr. Weber','Praxis Süd'],
+  ['2026-02-14','21:00','tagebuch','Rücken nach Umzug',6,c2,'Kisten geschleppt, unterer Rücken macht dicht.','Wärmepflaster über Nacht.','',''],
+  ['2026-01-08','12:00','sonstiges','Rezept abgeholt',null,c2,'Ohne Schmerzangabe — prüft die Darstellung ohne Balken.','','','']
+];
+for (const [date,time,type,title,pain,cond,body,helped,prac,place] of rows)
+  await db.saveEntry(emptyEntry({ date, time, type, title, pain, conditionId:cond.id, body, helped, practitioner:prac, place }));
+document.getElementById('out').textContent = 'fertig: ' + rows.length + ' Einträge, 2 Themen';
+</script></body></html>
