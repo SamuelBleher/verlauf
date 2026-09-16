@@ -276,5 +276,70 @@ ok('B lädt ihn erst bei Bedarf', fetched.hadBlob === false);
 ok('Bytes identisch nach dem Nachladen', fetched.size === att.size && fetched.head.join() === att.head.join(),
    JSON.stringify(fetched));
 
+// 9. Transkript: legt jemand eine .txt neben die Aufnahme, muss die App sie zeigen
+console.log('\n9. Transkript wird aufgesammelt');
+const audioInfo = await A.eval(`(async () => {
+  const db = await import('/js/db.js');
+  const m = await import('/js/models.js');
+  // Winziges WAV, damit eine echte Audiodatei im Repo landet.
+  const n = 1600, buf = new ArrayBuffer(44 + n), dv = new DataView(buf);
+  const put = (o, str) => [...str].forEach((ch, i) => dv.setUint8(o + i, ch.charCodeAt(0)));
+  put(0, 'RIFF'); dv.setUint32(4, 36 + n, true); put(8, 'WAVEfmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true);
+  dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+  put(36, 'data'); dv.setUint32(40, n, true);
+  const blob = new Blob([buf], { type: 'audio/wav' });
+  const e = (await db.listEntries())[0];
+  const a = { id: m.newId('a'), entryId: e.id, blob, thumb: null, kind: 'audio',
+    name: 'Arztgespraech.wav', bytes: blob.size, seconds: 1, ext: 'wav', mime: 'audio/wav',
+    path: null, consent: 'mündlich eingeholt',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dirty: 1, deleted: 0 };
+  await db.put('attachments', a);
+  await db.saveEntry(e);
+  return { id: a.id };
+})()`);
+r = await A.sync(); ok('A pusht Aufnahme', r.ok, r.error);
+files = await listFiles();
+const audioPath = files.find(f => f.startsWith('dateien/') && f.endsWith('.wav'));
+ok('Aufnahme liegt im Repo', Boolean(audioPath), files.join(', '));
+
+// Genau das tut tools/transkribieren.sh: .txt neben die Aufnahme legen.
+const txtPath = audioPath.replace(/\.[^.]+$/, '.txt');
+const TRANSCRIPT = '[00:00:00] SPEAKER_00: Das Knie sieht deutlich besser aus.\n' +
+                   '[00:00:06] SPEAKER_01: Und Joggen wieder ab wann?';
+{
+  const parent = await headSha();
+  const blob = await api('/git/blobs', { method: 'POST',
+    body: JSON.stringify({ content: TRANSCRIPT, encoding: 'utf-8' }) });
+  const parentCommit = await api(`/git/commits/${parent}`);
+  const tree = await api('/git/trees', { method: 'POST', body: JSON.stringify({
+    base_tree: parentCommit.tree.sha,
+    tree: [{ path: txtPath, mode: '100644', type: 'blob', sha: blob.sha }] }) });
+  const commit = await api('/git/commits', { method: 'POST',
+    body: JSON.stringify({ message: 'Transkript', tree: tree.sha, parents: [parent] }) });
+  await api(`/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: JSON.stringify({ sha: commit.sha }) });
+}
+ok('Transkript liegt neben der Aufnahme', (await listFiles()).includes(txtPath), txtPath);
+
+r = await B.sync(); ok('B synchronisiert', r.ok, r.error);
+const seen = await B.eval(`(async () => {
+  const db = await import('/js/db.js');
+  const a = (await db.all('attachments')).find(x => x.kind === 'audio' && !x.deleted);
+  return { name: a?.name, transcript: a?.transcript || null };
+})()`);
+ok('App kennt das Transkript', seen.transcript === TRANSCRIPT, JSON.stringify(seen).slice(0, 160));
+
+// Und die Suche muss finden, was im Gespräch gesagt wurde.
+const found = await B.eval(`(async () => {
+  const db = await import('/js/db.js');
+  const atts = await db.all('attachments');
+  const entries = await db.listEntries();
+  const norm = s => String(s || '').toLowerCase();
+  return entries.filter(e => norm(atts.filter(a => a.entryId === e.id)
+    .map(a => a.transcript || '').join(' ')).includes('joggen')).length;
+})()`);
+ok('Suche findet Gesagtes aus dem Gespräch', found === 1, String(found));
+
 console.log(`\n${pass} bestanden, ${fail} fehlgeschlagen`);
 process.exit(fail ? 1 : 0);

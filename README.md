@@ -74,16 +74,32 @@ Aufnahmen laufen mono mit 32 kbit/s — ein Gespräch von 20 Minuten wiegt etwa
 
 ### Transkripte
 
-Nach dem Sync auf dem Rechner:
+Nach dem Sync auf dem eigenen Rechner:
 
 ```sh
 ./tools/transkribieren.sh ~/krankenakte
 ```
 
-Das Skript sucht Aufnahmen ohne Transkript, jagt sie durch `transcribe`
-(faster-whisper + pyannote, mit Sprechertrennung) und committet die Texte
-zurück. Beim nächsten Sync zeigt die App sie unter dem Player an — und die
-Suche findet ab dann auch, was im Gespräch gesagt wurde.
+Sucht Aufnahmen ohne Transkript, jagt sie durch `transcribe` (faster-whisper +
+pyannote) und committet die Texte zurück. Beim nächsten Sync zeigt die App sie
+unter dem Player an — und die Suche findet ab dann auch, was im Gespräch gesagt
+wurde. Alles läuft lokal, es wird nichts hochgeladen.
+
+Gemessen auf einem 8-Kern-Laptop (Ryzen AI 7 PRO 350), `large-v3-turbo`:
+
+| | Tempo | 20-Minuten-Termin |
+|---|---|---|
+| ohne Sprechertrennung (`DIARIZE=0`) | ~4x Echtzeit | ≈ 5 min |
+| mit Sprechertrennung | ~1,2x Echtzeit | ≈ 17 min |
+
+Eine GPU braucht es dafür nicht.
+
+**Wichtig:** Das Skript wandelt jede Aufnahme zuerst mit `tools/zu-wav.py` nach
+16-kHz-Mono-WAV. pyannote bricht sonst auf komprimierten Containern ab — bei
+`.webm` (das Format der App) mit einem TypeError, bei `.ogg` mit einer falschen
+Sample-Zahl. Die Umwandlung läuft über PyAV, ffmpeg wird nicht gebraucht.
+
+Stellschrauben: `MODEL=small` (schneller), `DIARIZE=0`, `PUSH=0`, `LANG_CODE=en`.
 
 ## Entwickeln
 
