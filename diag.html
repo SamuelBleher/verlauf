@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verlauf — Diagnose</title>
+<style>
+  /* Bewusst ohne externe Dateien und ohne Farbschema-Tricks:
+     diese Seite muss auch dann lesbar sein, wenn alles andere kaputt ist. */
+  html { background: #fff; color: #111; }
+  body { margin: 0; padding: 16px; font: 15px/1.5 system-ui, sans-serif;
+         background: #fff; color: #111; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; color: #555; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  td { padding: 7px 4px; border-bottom: 1px solid #ddd; vertical-align: top; }
+  td:first-child { color: #555; width: 42%; }
+  .ok { color: #127a3d; font-weight: 600; }
+  .bad { color: #b3261e; font-weight: 600; }
+  pre { background: #f3f3f3; padding: 10px; border-radius: 6px; font-size: 12px;
+        white-space: pre-wrap; word-break: break-word; margin: 14px 0; }
+  button { font: inherit; padding: 12px 16px; border-radius: 8px; border: 1px solid #bbb;
+           background: #fff; width: 100%; margin-top: 10px; min-height: 48px; }
+  button.go { background: #0C7188; color: #fff; border-color: #0C7188; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Verlauf — Diagnose</h1>
+<p class="sub">Was dieses Gerät kann und was gerade zwischengespeichert ist.</p>
+<table id="t"></table>
+<pre id="log">läuft …</pre>
+<button class="go" id="reset">Cache und Service Worker löschen</button>
+<button id="open">App öffnen (ohne Cache)</button>
+
+<script>
+// Klassisches Script, kein Modul: läuft auch, wenn die Modul-Kette scheitert.
+var rows = [], notes = [];
+function add(label, value, good) {
+  rows.push('<tr><td>' + label + '</td><td class="' +
+    (good === true ? 'ok' : good === false ? 'bad' : '') + '">' + value + '</td></tr>');
+  document.getElementById('t').innerHTML = rows.join('');
+}
+window.onerror = function (m, s, l) { notes.push('Fehler: ' + m + ' (' + s + ':' + l + ')'); draw(); };
+function draw() { document.getElementById('log').textContent = notes.join('\n') || 'Keine Fehler aufgetreten.'; }
+
+add('Browser', navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''));
+add('Als App installiert', window.matchMedia('(display-mode: standalone)').matches || navigator.standalone ? 'ja' : 'nein');
+
+add('ES-Module', 'HTMLScriptElement' in window && 'noModule' in document.createElement('script') ? 'unterstützt' : 'FEHLT', 'noModule' in document.createElement('script'));
+add('Array.at()', typeof Array.prototype.at === 'function' ? 'ja' : 'FEHLT', typeof Array.prototype.at === 'function');
+add('color-mix()', window.CSS && CSS.supports && CSS.supports('color', 'color-mix(in srgb, red 50%, blue)') ? 'ja' : 'nein (nur Optik)');
+add('MediaRecorder', 'MediaRecorder' in window ? 'ja' : 'nein (keine Aufnahme)');
+add('Service Worker', 'serviceWorker' in navigator ? 'ja' : 'nein');
+
+// IndexedDB — der häufigste Grund für eine leere Seite
+if (!window.indexedDB) { add('IndexedDB', 'FEHLT', false); notes.push('Ohne IndexedDB startet die App nicht. Im privaten Modus ist das normal.'); draw(); }
+else {
+  try {
+    var req = indexedDB.open('verlauf-diagnose', 1);
+    req.onsuccess = function () { add('IndexedDB', 'funktioniert', true); try { req.result.close(); indexedDB.deleteDatabase('verlauf-diagnose'); } catch (e) {} };
+    req.onerror = function () { add('IndexedDB', 'blockiert', false); notes.push('IndexedDB wird verweigert — privates Surfen oder Speicher voll.'); draw(); };
+    req.onblocked = function () { add('IndexedDB', 'blockiert', false); };
+  } catch (e) { add('IndexedDB', 'Fehler: ' + e.message, false); }
+}
+
+// Welche Fassung liegt im Cache, welche liegt auf dem Server?
+fetch('./index.html?bust=' + Date.now(), { cache: 'no-store' })
+  .then(function (r) { return r.text(); })
+  .then(function (t) {
+    add('Server liefert', t.indexOf('boot-note') !== -1 ? 'neue Fassung' : 'ALTE Fassung', t.indexOf('boot-note') !== -1);
+  })
+  .catch(function (e) { add('Server erreichbar', 'nein: ' + e.message, false); });
+
+fetch('./index.html')
+  .then(function (r) { return r.text(); })
+  .then(function (t) {
+    var neu = t.indexOf('boot-note') !== -1;
+    add('Dein Gerät sieht', neu ? 'neue Fassung' : 'ALTE Fassung (Cache!)', neu);
+    if (!neu) notes.push('Dein Gerät bekommt eine veraltete Kopie. Unten auf "Cache und Service Worker löschen" tippen.');
+    draw();
+  })
+  .catch(function (e) { add('Lokaler Abruf', 'Fehler: ' + e.message, false); });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (rs) {
+    add('Registrierte Worker', rs.length ? rs.length + ' aktiv' : 'keiner');
+  });
+}
+if (window.caches) {
+  caches.keys().then(function (ks) { add('Cache-Speicher', ks.length ? ks.join(', ') : 'leer'); });
+}
+
+document.getElementById('reset').onclick = function () {
+  var btn = this; btn.textContent = 'räume auf …';
+  var jobs = [];
+  if ('serviceWorker' in navigator)
+    jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+      return Promise.all(rs.map(function (r) { return r.unregister(); }));
+    }));
+  if (window.caches) jobs.push(caches.keys().then(function (ks) {
+    return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+  }));
+  Promise.all(jobs).then(function () {
+    btn.textContent = 'Fertig — App wird geöffnet';
+    location.replace('./?frisch=' + Date.now());
+  });
+};
+document.getElementById('open').onclick = function () { location.replace('./?frisch=' + Date.now()); };
+draw();
+</script>
+</body>
+</html>

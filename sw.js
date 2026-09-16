@@ -1,7 +1,7 @@
 // App-Shell offline halten. Daten liegen in IndexedDB, nicht hier —
 // api.github.com wird bewusst nie zwischengespeichert.
 
-const VERSION = 'verlauf-v2';
+const VERSION = 'verlauf-v3';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
@@ -32,6 +32,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.hostname === 'api.github.com') return;          // nie cachen
+  if (url.pathname.endsWith('/diag.html')) return;        // Diagnose muss immer frisch sein
   if (url.origin !== self.location.origin && !url.hostname.includes('fonts.g')) return;
 
   if (request.mode === 'navigate') {
