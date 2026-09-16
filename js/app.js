@@ -150,7 +150,34 @@ async function runSync() {
 }
 
 /* ── Start ─────────────────────────────────────────────── */
+
+/** Ein leerer Bildschirm sagt nichts. Lieber zeigen, was schiefging. */
+function fatal(err, hint) {
+  const msg = (err && (err.message || err.name)) || String(err);
+  viewEl.innerHTML = `<div class="empty">
+    <h2>Die App konnte nicht starten</h2>
+    <p>${hint || ''}</p>
+    <p style="font-family:ui-monospace,monospace;font-size:.75rem;color:var(--ink-dim);
+       word-break:break-word;text-align:left;background:var(--film);padding:.6rem;border-radius:8px">${
+      String(msg).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</p>
+    <button class="btn" onclick="location.reload()">Neu laden</button>
+  </div>`;
+  console.error(err);
+}
+
+/** IndexedDB fehlt im privaten Modus mancher Browser — ohne sie geht hier nichts. */
+async function checkStorage() {
+  if (!self.indexedDB) throw new Error('IndexedDB ist in diesem Browser nicht verfügbar.');
+  await db.open();
+}
+
 async function boot() {
+  try {
+    await checkStorage();
+  } catch (err) {
+    fatal(err, 'Der Browser lässt keinen lokalen Speicher zu. Im privaten Modus ist das normal — bitte in einem normalen Tab öffnen.');
+    return;
+  }
   const s = await db.getSettings();
   settings.applyTheme(s.theme);
   await sync.init();
@@ -173,6 +200,7 @@ async function boot() {
     });
   });
 
+  document.getElementById('boot-note')?.remove();
   await render();
 
   if (db.isConfigured(s) && navigator.onLine && s.autoSync) {
@@ -185,4 +213,9 @@ async function boot() {
   }
 }
 
-boot();
+window.addEventListener('unhandledrejection', ev => {
+  if (!document.getElementById('boot-note')) return;   // nur während des Starts
+  fatal(ev.reason, 'Beim Start ist ein Fehler aufgetreten.');
+});
+
+boot().catch(err => fatal(err, 'Beim Start ist ein Fehler aufgetreten.'));

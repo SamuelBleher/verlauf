@@ -21,7 +21,15 @@
 <body>
 <div id="app" class="app">
   <header class="topbar" id="topbar"></header>
-  <main class="view" id="view" tabindex="-1"></main>
+  <main class="view" id="view" tabindex="-1">
+    <div class="empty" id="boot-note">
+      <h2>Wird geladen …</h2>
+      <p>Bleibt das stehen, konnte die App nicht starten. Dann hilft meist:
+      Seite neu laden, oder ein normaler Tab statt privatem Surfen.</p>
+    </div>
+    <noscript><div class="empty"><h2>JavaScript ist aus</h2>
+      <p>Diese App läuft komplett im Browser und braucht JavaScript.</p></div></noscript>
+  </main>
   <nav class="tabbar" id="tabbar" aria-label="Hauptnavigation"></nav>
 </div>
 <div id="sheet" class="sheet" hidden></div>
