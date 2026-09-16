@@ -80,22 +80,25 @@ export async function detailView({ params, navigate }) {
   if (first && last && first !== last) facts.push(['Dauer', relativeDays(parseDate(first)).replace('vor ', '')]);
 
   return {
-    title: conditionTitle(c),
+    title: 'Thema',
     back: true,
     action: { icon: 'edit', label: 'Thema bearbeiten', href: '#/thema/' + c.id + '/bearbeiten' },
     html: `
       <div class="detail">
-        <div class="tl-meta"><span class="status ${c.status}">${statusLabel(c.status)}</span>
+        <div class="tl-meta">
           <span>${escape(c.bodyPart)}${c.side && c.side !== 'na' ? ' ' + (SIDES.find(s => s.id === c.side) || {}).label.toLowerCase() : ''}</span></div>
         <h1 class="detail-h1">${escape(conditionTitle(c))}</h1>
-        ${series.length > 1 ? `<div style="margin:.5rem 0 1rem">${sparkline(series, painColor(series.at(-1)), 320, 54)}</div>` : ''}
+        ${series.length > 1 ? `<div style="margin:.75rem 0 1rem">
+          ${sparkline(series, painColor(series.at(-1)), 320, 54, true)}
+          <div class="spark-scale"><span>${series.length} Messungen</span><span>Schmerz 0–10</span></div>
+        </div>` : ''}
         <dl class="factgrid">${facts.map(([k, v]) => `<div class="fact"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
         ${c.notes ? `<div class="prose">${renderMarkdown(c.notes)}</div>` : ''}
         <div class="btnrow" style="margin:1.25rem 0 .5rem">
           <button class="btn primary" data-add>${icon('plus')} Eintrag zu diesem Thema</button>
         </div>
       </div>
-      ${entries.length ? `<h2 class="section-h pad" style="margin-top:1.5rem">Verlauf</h2>${renderList(entries, condById, attByEntry)}`
+      ${entries.length ? `<h2 class="section-h pad" style="margin-top:1.5rem">Verlauf</h2>${renderList(entries, condById, attByEntry, { hideCondition: true })}`
         : '<div class="empty"><p>Noch keine Einträge zu diesem Thema.</p></div>'}`,
     mount(root) {
       root.querySelector('[data-add]').onclick = () => navigate(`#/eintrag/neu?thema=${c.id}`);

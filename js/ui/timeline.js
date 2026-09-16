@@ -19,7 +19,7 @@ function thumbHtml(att) {
   return `<span class="th">${icon(map[att.kind] || 'file')}</span>`;
 }
 
-export function entryRow(entry, condition, attachments = []) {
+export function entryRow(entry, condition, attachments = [], hideCondition = false) {
   const d = parseDate(entry);
   const hasPain = entry.pain !== null && entry.pain !== undefined;
   const color = painColor(entry.pain);
@@ -39,7 +39,7 @@ export function entryRow(entry, condition, attachments = []) {
         </span>
         <span class="tl-title">${escape(entry.title) || typeLabel(entry.type)}</span>
         <span class="tl-meta">
-          ${condition ? `<span class="chip"><i class="swatch" style="--c:${condition.color}"></i>${escape(conditionTitle(condition))}</span>` : ''}
+          ${condition && !hideCondition ? `<span class="chip"><i class="swatch" style="--c:${condition.color}"></i>${escape(conditionTitle(condition))}</span>` : ''}
           <span>${typeLabel(entry.type)}</span>
           ${entry.practitioner ? `<span>${escape(entry.practitioner)}</span>` : ''}
         </span>
@@ -52,7 +52,7 @@ export function entryRow(entry, condition, attachments = []) {
 
 const escape = (s = '') => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function renderList(entries, condById, attByEntry) {
+export function renderList(entries, condById, attByEntry, { hideCondition = false } = {}) {
   if (!entries.length) return '';
   const out = [];
   let month = null;
@@ -63,7 +63,7 @@ export function renderList(entries, condById, attByEntry) {
       month = key;
       out.push(`<div class="tl-month"><b>${monthName(d)}</b><span>${d.getFullYear()}</span><i></i></div>`);
     }
-    out.push(entryRow(e, condById.get(e.conditionId), attByEntry.get(e.id) || []));
+    out.push(entryRow(e, condById.get(e.conditionId), attByEntry.get(e.id) || [], hideCondition));
   }
   return `<div class="tl">${out.join('')}</div>`;
 }

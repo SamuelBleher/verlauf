@@ -153,14 +153,25 @@ export function lightbox(items, startIndex = 0) {
 }
 
 /* ── Sparkline für Themen ──────────────────────────────── */
-export function sparkline(values, color = 'currentColor', w = 62, hgt = 26) {
+export function sparkline(values, color = 'currentColor', w = 62, hgt = 26, big = false) {
   const pts = values.filter(v => v !== null && v !== undefined);
-  if (pts.length < 2) return `<svg class="spark" viewBox="0 0 ${w} ${hgt}" aria-hidden="true"></svg>`;
+  const cls = big ? 'spark-lg' : 'spark';
+  if (pts.length < 2) return `<svg class="${cls}" viewBox="0 0 ${w} ${hgt}" aria-hidden="true"></svg>`;
   const step = w / (pts.length - 1);
   const y = v => hgt - 2 - (v / 10) * (hgt - 4);
-  const d = pts.map((v, idx) => `${idx ? 'L' : 'M'}${(idx * step).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  return `<svg class="spark" viewBox="0 0 ${w} ${hgt}" aria-hidden="true" fill="none">
-    <path d="${d}" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
-    <circle cx="${((pts.length - 1) * step).toFixed(1)}" cy="${y(pts.at(-1)).toFixed(1)}" r="2" fill="${color}"/>
+  const line = pts.map((v, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const area = `${line} L${w} ${hgt} L0 ${hgt} Z`;
+  const id = 'g' + Math.random().toString(36).slice(2, 8);
+  // preserveAspectRatio=none streckt nur horizontal; non-scaling-stroke hält die
+  // Linie dabei gleich dünn.
+  return `<svg class="${cls}" viewBox="0 0 ${w} ${hgt}" aria-hidden="true" fill="none"
+    ${big ? 'preserveAspectRatio="none"' : ''}>
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${id})"/>
+    <path d="${line}" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"
+      stroke-linecap="round" vector-effect="non-scaling-stroke"/>
   </svg>`;
 }

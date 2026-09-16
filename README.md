@@ -119,6 +119,20 @@ Läuft jede Ansicht in hell und dunkel bei 320/390/430 px durch. Neben den
 dem Inhalt liegt — genau dieser Fehler war einmal unsichtbar für jede reine
 DOM-Prüfung und hat die App als schwarze Fläche ausgeliefert.
 
+Sync gegen echtes GitHub:
+
+```sh
+node tools/sync-test.mjs
+```
+
+Zwei Browserprofile spielen zwei Geräte. Geprüft werden Hochladen, Abholen,
+Änderungen in beide Richtungen, Umbenennen (alte Datei muss verschwinden),
+Konflikte, Löschen, Wiederherstellung auf einem leeren Gerät und der
+Binärpfad für Fotos — dort byteweise. Läuft ausschließlich gegen
+`krankenakte-test`; der Name steht fest im Skript. Braucht
+`~/.config/verlauf-test-token` mit Contents: Read and write auf genau dieses
+eine Repo.
+
 Für Screenshots braucht es ein Chromium, das auch wirklich rastert; das
 System-Chrome auf diesem Rechner tut das nicht:
 
