@@ -88,6 +88,7 @@ for (const scheme of ['light', 'dark']) {
         const view = document.getElementById('view');
         const out = {
           text: (view?.innerText || '').trim().length,
+          fatal: /konnte nicht starten|Wird geladen/.test(view?.innerText || ''),
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           past: [...document.querySelectorAll('#view *, .tabbar *, .topbar *')]
             .filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > ${width} + 1; })
@@ -103,7 +104,11 @@ for (const scheme of ['light', 'dark']) {
           if (b.width < 4 || b.height < 4) continue;
           const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
           if (top && top !== el && !el.contains(top) && !top.contains(el)) {
-            out.overlays.push((el.className || el.tagName) + ' verdeckt von ' + (top.id || top.className || top.tagName));
+            // Topbar, Tabbar und Toast liegen absichtlich oben; Inhalt scrollt
+            // darunter durch. Alles andere, was den Inhalt verdeckt, ist ein Fehler.
+            if (!top.closest('.tabbar, .topbar, #toast')) {
+              out.overlays.push((el.className || el.tagName) + ' verdeckt von ' + (top.id || top.className || top.tagName));
+            }
           }
           if (out.overlays.length > 2) break;
         }
@@ -116,6 +121,8 @@ for (const scheme of ['light', 'dark']) {
       })()`);
 
       if (!r.text) note(`${tag}: Ansicht ist leer`);
+      // Der Startfehler-Bildschirm hat Text — ohne diese Prüfung gilt er als "rendert".
+      if (r.fatal) note(`${tag}: App startet nicht (Fehlerbildschirm steht)`);
       if (r.overflow > 0) note(`${tag}: ${r.overflow}px horizontaler Überlauf`);
       if (r.past.length) note(`${tag}: ragt rechts heraus — ${r.past.join(', ')}`);
       if (r.taps.length) note(`${tag}: Tap-Ziel unter 32px — ${r.taps.join(', ')}`);

@@ -32,7 +32,12 @@ async function client() {
   return new GitHub({ token: s.token, owner: s.repoOwner, repo: s.repoName, branch: s.branch || 'main' });
 }
 
-const loadState = () => db.getMeta('sync', { lastCommit: null, paths: {}, lastSyncAt: null });
+const EMPTY_STATE = () => ({ lastCommit: null, paths: {}, lastSyncAt: null });
+async function loadState() {
+  const st = await db.getMeta('sync', null);
+  if (!st || typeof st !== 'object') return EMPTY_STATE();
+  return { ...EMPTY_STATE(), ...st };
+}
 const saveState = st => db.setMeta('sync', st);
 
 /* ── Pull ──────────────────────────────────────────────── */

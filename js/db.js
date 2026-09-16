@@ -66,7 +66,10 @@ export function byIndex(store, index, value) {
 /* ── Meta / Einstellungen ──────────────────────────────── */
 export async function getMeta(key, fallback = null) {
   const row = await get('meta', key);
-  return row === undefined || row === null ? fallback : row.value;
+  if (row === undefined || row === null) return fallback;
+  // Auch ein gespeichertes null muss den Vorgabewert liefern — sonst bekommt
+  // der Aufrufer null zurück, obwohl er ein Objekt erwartet.
+  return row.value === undefined || row.value === null ? fallback : row.value;
 }
 export const setMeta = (key, value) => put('meta', { key, value });
 
@@ -152,5 +155,5 @@ export async function wipeAll() {
     ['entries', 'conditions', 'attachments', 'conflicts'].forEach(s => t.objectStore(s).clear());
     t.oncomplete = res; t.onerror = () => rej(t.error);
   });
-  await setMeta('sync', null);
+  await del('meta', 'sync');
 }

@@ -1,7 +1,7 @@
 // App-Shell offline halten. Daten liegen in IndexedDB, nicht hier —
 // api.github.com wird bewusst nie zwischengespeichert.
 
-const VERSION = 'verlauf-v4';
+const VERSION = 'verlauf-v5';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
