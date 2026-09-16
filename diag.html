@@ -28,6 +28,11 @@
 <h1>Verlauf — Diagnose</h1>
 <p class="sub">Was dieses Gerät kann und was gerade zwischengespeichert ist.</p>
 <table id="t"></table>
+<h2 style="font-size:15px;margin:18px 0 4px">App-Module</h2>
+<table id="m"></table>
+<h2 style="font-size:15px;margin:18px 0 4px">App im Rahmen geladen</h2>
+<pre id="frame">läuft …</pre>
+<iframe id="probe" src="about:blank" style="width:1px;height:1px;opacity:0;border:0;position:absolute;left:-9999px"></iframe>
 <pre id="log">läuft …</pre>
 <button class="go" id="reset">Cache und Service Worker löschen</button>
 <button id="open">App öffnen (ohne Cache)</button>
@@ -89,6 +94,49 @@ if ('serviceWorker' in navigator) {
 if (window.caches) {
   caches.keys().then(function (ks) { add('Cache-Speicher', ks.length ? ks.join(', ') : 'leer'); });
 }
+
+// Feature-Detect sagt nur, dass der Browser Module KENNT. Hier werden sie wirklich geladen.
+var MODULES = ['./js/models.js','./js/markdown.js','./js/repo.js','./js/db.js','./js/images.js',
+               './js/audio.js','./js/github.js','./js/sync.js','./js/ui/components.js',
+               './js/ui/timeline.js','./js/ui/entry-edit.js','./js/ui/entry-view.js',
+               './js/ui/conditions.js','./js/ui/search.js','./js/ui/settings.js','./js/app.js'];
+var mrows = [];
+function mrow(name, value, good) {
+  mrows.push('<tr><td>' + name + '</td><td class="' + (good ? 'ok' : 'bad') + '">' + value + '</td></tr>');
+  document.getElementById('m').innerHTML = mrows.join('');
+}
+(function next(i) {
+  if (i >= MODULES.length) { mrow('alle Module', 'geladen', true); return; }
+  var name = MODULES[i];
+  var t0 = Date.now();
+  // app.js startet beim Import die App — deshalb zuletzt und getrennt gemeldet.
+  import(name + '?diag=' + t0).then(function () {
+    if (name === './js/app.js') mrow(name, 'geladen', true);
+    next(i + 1);
+  }).catch(function (e) {
+    mrow(name, String(e && (e.message || e)).slice(0, 180), false);
+    notes.push('Modul ' + name + ' scheitert: ' + (e && (e.stack || e.message || e)));
+    draw();
+    next(i + 1);
+  });
+})(0);
+
+// Die echte App in einem Rahmen starten und nachsehen, was sie anzeigt.
+(function () {
+  var f = document.getElementById('probe');
+  var out = document.getElementById('frame');
+  f.src = './index.html?imframe=' + Date.now();
+  setTimeout(function () {
+    try {
+      var d = f.contentDocument;
+      var view = d.getElementById('view');
+      var txt = (view ? view.innerText : d.body.innerText) || '';
+      txt = txt.replace(/\s+/g, ' ').trim();
+      out.textContent = txt ? 'Die App zeigt: "' + txt.slice(0, 220) + '"'
+                            : 'Die App zeigt NICHTS — #view ist leer.';
+    } catch (e) { out.textContent = 'Rahmen nicht lesbar: ' + e.message; }
+  }, 5000);
+})();
 
 document.getElementById('reset').onclick = function () {
   var btn = this; btn.textContent = 'räume auf …';
