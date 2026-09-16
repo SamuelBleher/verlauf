@@ -24,7 +24,7 @@ const WIDTHS = [320, 390, 430];
 const ROUTES = [
   ['#/', 'verlauf'], ['#/themen', 'themen'], ['#/eintrag/neu', 'neuer-eintrag'],
   ['#/suche', 'suche'], ['#/einstellungen', 'einstellungen']
-];
+];   // die Detailansicht mit Anhängen kommt nach dem Seeding dazu
 
 const problems = [];
 const note = m => problems.push(m);
@@ -75,6 +75,10 @@ await go(base + 'tools/seed.html', 3000);
 const seeded = await c.eval("document.getElementById('out').textContent");
 if (!/fertig/.test(seeded)) note(`Demodaten fehlgeschlagen: ${seeded}`);
 console.log('Demodaten:', seeded);
+// Eintrag mit Bild und Aufnahme mitprüfen — dort entstehen die Anhangskarten.
+const withAtts = (seeded.match(/\(([^)]+)\)/) || [])[1];
+if (withAtts) ROUTES.push(['#/eintrag/' + withAtts, 'eintrag-anhaenge']);
+else note('Eintrag mit Anhängen nicht gefunden');
 
 for (const scheme of ['light', 'dark']) {
   await c.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
@@ -96,7 +100,14 @@ for (const scheme of ['light', 'dark']) {
           taps: [...document.querySelectorAll('button, a, select, textarea, input:not([type=checkbox]):not([type=range])')]
             .filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && b.height < 32; })
             .map(e => (e.className || e.tagName) + ':' + Math.round(e.getBoundingClientRect().height)).slice(0, 4),
-          overlays: []
+          overlays: [],
+          // SVG ohne width/height wächst auf Containergröße. Zweimal passiert:
+          // Lightbox als schwarze Fläche, Mikrofon über die ganze Aufnahmekarte.
+          fatIcons: [...document.querySelectorAll('svg')]
+            .filter(e => !e.classList.contains('spark') && !e.classList.contains('spark-lg'))
+            .filter(e => { const b = e.getBoundingClientRect(); return b.width > 48 || b.height > 48; })
+            .map(e => (e.parentElement?.className || '?') + ' → ' +
+                 Math.round(e.getBoundingClientRect().width) + 'px').slice(0, 3)
         };
         // Sichtbarkeit: liegt an typischen Stellen das, was dort liegen soll?
         for (const el of document.querySelectorAll('#view h1, #view h2, .tl-title, .btn, .tab')) {
@@ -127,6 +138,7 @@ for (const scheme of ['light', 'dark']) {
       if (r.past.length) note(`${tag}: ragt rechts heraus — ${r.past.join(', ')}`);
       if (r.taps.length) note(`${tag}: Tap-Ziel unter 32px — ${r.taps.join(', ')}`);
       for (const o of r.overlays) note(`${tag}: ${o}`);
+      for (const f of r.fatIcons) note(`${tag}: Icon zu groß — ${f}`);
       if (r.fg && r.bg) {
         const ratio = contrast(r.fg, r.bg);
         if (ratio < 4.5) note(`${tag}: Kontrast ${ratio.toFixed(2)}:1 (${r.fg} auf ${r.bg})`);

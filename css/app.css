@@ -230,6 +230,7 @@ button.chip[aria-pressed="true"] { border-color: var(--signal); color: var(--sig
   display: grid; place-items: center; color: var(--ink-dim);
 }
 .thumbs .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbs .th svg { width: 18px; height: 18px; }
 .thumbs .more { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 
 /* ── Conditions ──────────────────────────────────────────── */
@@ -297,6 +298,7 @@ button.chip[aria-pressed="true"] { border-color: var(--signal); color: var(--sig
 }
 .att img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .att .label { font-size: 0.6875rem; padding: 0 0.4rem; word-break: break-word; }
+.att .label svg { width: 20px; height: 20px; }
 .att .kind { position: absolute; left: 4px; bottom: 4px; background: color-mix(in srgb, var(--ground) 85%, transparent); border-radius: 3px; padding: 0 0.3rem; font-size: 0.625rem; color: var(--ink-mid); }
 
 .audio-card {
@@ -304,6 +306,8 @@ button.chip[aria-pressed="true"] { border-color: var(--signal); color: var(--sig
   padding: 0.75rem 0.85rem; margin-bottom: 0.6rem;
 }
 .audio-card .row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.audio-card .row > svg { width: 18px; height: 18px; flex: none; color: var(--ink-dim); }
+.audio-card audio::-webkit-media-controls-panel { background: var(--film-2); }
 .audio-card .nm { font-size: 0.875rem; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .audio-card .dur { font-size: 0.75rem; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 .audio-card audio { width: 100%; height: 36px; }
@@ -474,6 +478,7 @@ input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border-radius
 }
 .banner.warn { border-color: color-mix(in srgb, var(--p6) 45%, transparent); }
 .banner button { flex: none; }
+.banner > svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 
 .syncdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-dim); }
 .syncdot.ok { background: var(--p0); }

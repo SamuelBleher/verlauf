@@ -33,9 +33,13 @@ const P = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>'
 };
 
-export function icon(name, cls = '') {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${cls ? ` class="${cls}"` : ''}>${P[name] || P.dots}</svg>`;
+/** Ohne width/height bläht sich ein SVG auf die Größe seines Containers auf —
+ *  genau das hat das Mikrofon über die ganze Aufnahmekarte gezogen. Die
+ *  Attribute sind eine Untergrenze; jede CSS-Regel sticht sie weiterhin aus. */
+export function icon(name, cls = '', size = 20) {
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none"
+    stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"${cls ? ` class="${cls}"` : ''}>${P[name] || P.dots}</svg>`;
 }
 
 export const $ = (sel, root = document) => root.querySelector(sel);

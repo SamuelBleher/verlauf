@@ -25,5 +25,34 @@ const rows = [
 ];
 for (const [date,time,type,title,pain,cond,body,helped,prac,place] of rows)
   await db.saveEntry(emptyEntry({ date, time, type, title, pain, conditionId:cond.id, body, helped, practitioner:prac, place }));
-document.getElementById('out').textContent = 'fertig: ' + rows.length + ' Einträge, 2 Themen';
+// Anhänge an den Befund hängen, damit die Prüfung auch Bild- und Audiokarten sieht.
+const befund = (await db.listEntries()).find(e => e.type === 'befund');
+const cv = document.createElement('canvas'); cv.width = 240; cv.height = 320;
+const g = cv.getContext('2d');
+g.fillStyle = '#c8ccd0'; g.fillRect(0, 0, 240, 320);
+g.fillStyle = '#333'; g.font = '16px sans-serif'; g.fillText('MRT-Befund', 20, 40);
+const png = await new Promise(r => cv.toBlob(r, 'image/png'));
+
+// Ein Sekunde 8-kHz-Mono-WAV von Hand, damit ein echtes Audioelement entsteht.
+const n = 8000, buf = new ArrayBuffer(44 + n), dv = new DataView(buf);
+const put = (o, str) => [...str].forEach((ch, i) => dv.setUint8(o + i, ch.charCodeAt(0)));
+put(0, 'RIFF'); dv.setUint32(4, 36 + n, true); put(8, 'WAVEfmt ');
+dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true);
+dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+put(36, 'data'); dv.setUint32(40, n, true);
+for (let i = 0; i < n; i++) dv.setUint8(44 + i, 128 + Math.round(40 * Math.sin(i / 12)));
+const wav = new Blob([buf], { type: 'audio/wav' });
+
+const { newId } = await import('../js/models.js');
+const stamp = new Date().toISOString();
+await db.put('attachments', { id: newId('a'), entryId: befund.id, blob: png, thumb: png,
+  kind: 'image', name: 'MRT Seite 1.png', bytes: png.size, seconds: 0, ext: 'png',
+  mime: 'image/png', path: null, createdAt: stamp, updatedAt: stamp, dirty: 1, deleted: 0 });
+await db.put('attachments', { id: newId('a'), entryId: befund.id, blob: wav, thumb: null,
+  kind: 'audio', name: 'Gespräch Radiologie.wav', bytes: wav.size, seconds: 1, ext: 'wav',
+  mime: 'audio/wav', path: null, consent: 'mündlich eingeholt',
+  createdAt: stamp, updatedAt: stamp, dirty: 1, deleted: 0 });
+
+document.getElementById('out').textContent = 'fertig: ' + rows.length + ' Einträge, 2 Themen, 2 Anhänge (' + befund.id + ')';
 </script></body></html>
