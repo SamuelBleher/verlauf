@@ -73,6 +73,11 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Muss vor allen Klassenregeln stehen und !important tragen: .sheet und .lightbox
+   setzen display:grid, und ein Klassenselektor schlägt das [hidden]{display:none}
+   des Browsers. Ohne das hier liegt die Lightbox als schwarze Fläche über der App. */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
